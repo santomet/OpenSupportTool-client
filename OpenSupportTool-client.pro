@@ -9,15 +9,18 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    machinecreatedialog.cpp \
     main.cpp \
     mainwindow.cpp \
     settingsdialog.cpp
 
 HEADERS += \
+    machinecreatedialog.h \
     mainwindow.h \
     settingsdialog.h
 
 FORMS += \
+    machinecreatedialog.ui \
     mainwindow.ui \
     settingsdialog.ui
 

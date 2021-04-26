@@ -3,7 +3,9 @@
 
 #include <QMainWindow>
 #include "settingsdialog.h"
+#include "machinecreatedialog.h"
 #include <QNetworkAccessManager>
+#include <QMessageBox>
 #include <QUrlQuery>
 #include <QNetworkReply>
 #include <QJsonObject>
@@ -45,13 +47,26 @@ private slots:
 
     void updateCurrentlySelectedObject();
 
+    void on_actionMachineCreate_triggered();
+
+    void on_actionMove_triggered();
+
+    void on_actionCreate_Directory_triggered();
+
+    void on_actionDestroy_triggered();
+
+    void on_actionRequest_a_Tunnel_triggered();
+
+    void on_actionDestroy_the_Tunnel_triggered();
+
 private:
 
     QTreeWidgetItem *processDirs(QJsonObject dir);
 
     Ui::MainWindow *ui;
-    SettingsDialog *ad {new SettingsDialog(this)};
     QNetworkAccessManager *n {new QNetworkAccessManager(this)};
+    SettingsDialog *ad {new SettingsDialog(this)};
+    MachineCreateDialog *mcd {new MachineCreateDialog(n, this)};
 
     QString authBearer {""};
     QByteArray authHeaderValue;
@@ -63,5 +78,4 @@ private:
     QMap<QTreeWidgetItem*, int> directoryItemToIDMap;
     QMap<QListWidgetItem*, int> tunnelItemToIDMap;
 };
-static QByteArray authHeaderName {QByteArray::fromStdString("Authorization")};
 #endif // MAINWINDOW_H

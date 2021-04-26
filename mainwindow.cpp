@@ -10,6 +10,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->listWidgetUserGroups, &QListWidget::itemSelectionChanged, this, &MainWindow::requestDirsAndMachines);
     connect(ui->treeWidgetMachines, &QTreeWidget::itemSelectionChanged, this, &MainWindow::updateCurrentlySelectedObject);
 
+    connect(ui->lineEditDirectoryName, &QLineEdit::textChanged, [=](QString str) {ui->toolButtonDirectoryCreate->setEnabled(
+                    !str.isEmpty() && ui->treeWidgetMachines->currentItem() && ui->treeWidgetMachines->currentItem()->type() == Directory
+                    );});
+
 
     //refresh tick
     connect(refreshTick, &QTimer::timeout, this, &MainWindow::updateCurrentlySelectedObject);
@@ -21,6 +25,14 @@ MainWindow::MainWindow(QWidget *parent)
     ui->toolButtonMachineCreate->setDefaultAction(ui->actionMachineCreate);
     ui->toolButtonMove->setDefaultAction(ui->actionMove);
     ui->toolButtonRemove->setDefaultAction(ui->actionDestroy);
+
+    ui->toolButtonDirectoryCreate->setEnabled(false);
+
+    //add something to the lifespan selector
+    ui->comboBoxLifespan->addItem("15 Minutes", 900);
+    ui->comboBoxLifespan->addItem("1 Hour", 3600);
+    ui->comboBoxLifespan->addItem("5 Hours", 18000);
+    ui->comboBoxLifespan->addItem("24 Hours", 86400);
 
 
     login();
@@ -181,6 +193,7 @@ void MainWindow::requestMachineDetails(int id)
             QDateTime lastAlive = QDateTime::fromString(mach.value("last_query_datetime").toString(), Qt::ISODateWithMs);
             lastAlive.setTimeSpec(Qt::UTC);
             ui->labelLastAlive->setText(QString::number(lastAlive.secsTo(QDateTime::currentDateTimeUtc())) + " secs ago");
+            ui->toolButtonCreateTunnel->setEnabled(true);
         }
         else {
             qDebug() << "Wrong answer" << reply->error();
@@ -333,3 +346,213 @@ QTreeWidgetItem *MainWindow::processDirs(QJsonObject dir)
 }
 
 
+
+void MainWindow::on_actionMachineCreate_triggered()
+{
+    mcd->reset();
+    QTreeWidgetItem *item = ui->treeWidgetMachines->currentItem();
+    if(!item) {
+        return;
+    }
+    mcd->preset(authHeaderValue, item->text(0), directoryItemToIDMap.value(item));
+
+    mcd->exec();
+    requestDirsAndMachines();
+}
+
+void MainWindow::on_actionMove_triggered()
+{
+
+}
+
+void MainWindow::on_actionCreate_Directory_triggered()
+{
+    QTreeWidgetItem *item = ui->treeWidgetMachines->currentItem();
+    if(!item) {
+        return;
+    }
+    if(item->type() != Directory) {
+        return;
+    }
+    if(ui->lineEditDirectoryName->text().isEmpty()) {
+        return;
+    }
+    QSettings s;
+    QString apibase = s.value("apiurl", "").toString();
+    QUrl url(apibase + "/machines/add_directory");
+    QUrlQuery query;
+    query.addQueryItem("name", ui->lineEditDirectoryName->text());
+    query.addQueryItem("parent_id", QString::number(directoryItemToIDMap.value(item)));
+    url.setQuery(query);
+    QNetworkRequest request(url);
+    request.setRawHeader(authHeaderName, authHeaderValue);
+    QNetworkReply *reply = n->get(request);
+    QObject::connect(reply, &QNetworkReply::finished, [=]() {
+        if(reply->error() == QNetworkReply::NoError) {
+            requestDirsAndMachines();
+//            QTreeWidgetItem *newit = new QTreeWidgetItem(item, Directory);
+//            newit->setText(0, ui->lineEditDirectoryName->text());
+//            newit->setIcon(0, QIcon(":/icons/res/folder.svg"));
+
+        }
+        else {
+            qDebug() << "Wrong answer" << reply->error();
+            if(reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                login();
+                return;
+            }
+            QJsonDocument doc(QJsonDocument::fromJson(reply->readAll()));
+            QJsonObject obj = doc.object();
+            if(obj.contains("detail")) {
+                QMessageBox::critical(this, "API Error", obj.value("detail").toString());
+            }
+        }
+        reply->deleteLater();
+    });
+
+
+}
+
+void MainWindow::on_actionDestroy_triggered()
+{
+    QTreeWidgetItem *item = ui->treeWidgetMachines->currentItem();
+    if(!item) {
+        return;
+    }
+    QString text;
+    QString apiadd;
+    QUrlQuery query;
+    switch(item->type()) {
+    case Machine:
+        text = ("Are you sure you want to destroy machine " + item->text(0) + "?");
+        apiadd = "/machines/remove_machine";
+        query.addQueryItem("machine_id", QString::number(machineItemToIDMap.value(item)));
+        break;
+    case Directory:
+        text = ("Are you sure you want to remove directory " + item->text(0) + "?");
+        apiadd = "/machines/remove_directory";
+        query.addQueryItem("directory_id", QString::number(directoryItemToIDMap.value(item)));
+        break;
+    default:
+        break;
+    }
+
+    int ret = QMessageBox::warning(this, "Deleting", text, QMessageBox::Ok | QMessageBox::Abort);
+    if(ret == QMessageBox::Abort) {
+        return;
+    }
+
+    QSettings s;
+    QString apibase = s.value("apiurl", "").toString();
+    QUrl url(apibase + apiadd);
+    url.setQuery(query);
+    QNetworkRequest request(url);
+    request.setRawHeader(authHeaderName, authHeaderValue);
+    QNetworkReply *reply = n->deleteResource(request);
+    QObject::connect(reply, &QNetworkReply::finished, [=]() {
+        if(reply->error() == QNetworkReply::NoError) {
+            requestDirsAndMachines();
+        }
+        else {
+            qDebug() << "Wrong answer" << reply->error();
+            if(reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                login();
+                return;
+            }
+            QJsonDocument doc(QJsonDocument::fromJson(reply->readAll()));
+            QJsonObject obj = doc.object();
+            if(obj.contains("detail")) {
+                QMessageBox::critical(this, "API Error", obj.value("detail").toString());
+            }
+        }
+        reply->deleteLater();
+    });
+
+
+}
+
+void MainWindow::on_actionRequest_a_Tunnel_triggered()
+{
+
+    QTreeWidgetItem *item = ui->treeWidgetMachines->currentItem();
+    if(!item || item->type() != Machine) {
+        return;
+    }
+    int mid = machineItemToIDMap.value(item);
+    QSettings s;
+    QJsonObject obj;
+    obj.insert("machine_id", mid);
+    obj.insert("port_to_tunnel", ui->spinBoxPort->value());
+    obj.insert("connection_type", 0); //We only know SSH connection right now :(
+    obj.insert("temporary_ssh_pubkey", s.value("SSHKey").toString());
+    obj.insert("timeout_seconds", ui->comboBoxLifespan->currentData().toInt());
+    QJsonDocument doc(obj);
+
+    QString apibase = s.value("apiurl", "").toString();
+    QUrl url(apibase + "/tunnels/request_tunnel");
+    QNetworkRequest request(url);
+    request.setRawHeader(authHeaderName, authHeaderValue);
+    QNetworkReply *reply = n->post(request, doc.toJson());
+    QObject::connect(reply, &QNetworkReply::finished, [=]() {
+        if(reply->error() == QNetworkReply::NoError) {
+            ui->toolButtonCreateTunnel->setEnabled(false);
+        }
+        else {
+            qDebug() << "Wrong answer" << reply->error();
+            if(reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                login();
+                return;
+            }
+            QJsonDocument doc(QJsonDocument::fromJson(reply->readAll()));
+            QJsonObject obj = doc.object();
+            if(obj.contains("detail")) {
+                QMessageBox::critical(this, "API Error", obj.value("detail").toString());
+            }
+        }
+        reply->deleteLater();
+    });
+}
+
+void MainWindow::on_actionDestroy_the_Tunnel_triggered()
+{
+    QListWidgetItem *item = ui->listWidgetTunnels->currentItem();
+    if(!item) {
+        return;
+    }
+    int tid = tunnelItemToIDMap.value(item);
+
+    int ret = QMessageBox::warning(this, "Destroying tunnel", "Are You sure you want to destroy the tunnel?", QMessageBox::Abort|QMessageBox::Ok);
+    if(ret == QMessageBox::Abort) {
+        return;
+    }
+
+    QSettings s;
+
+    QString apibase = s.value("apiurl", "").toString();
+    QUrl url(apibase + "/tunnels/destroy_tunnel");
+    QUrlQuery query;
+    query.addQueryItem("id", QString::number(tid));
+    url.setQuery(query);
+    QNetworkRequest request(url);
+    request.setRawHeader(authHeaderName, authHeaderValue);
+    QNetworkReply *reply = n->deleteResource(request);
+    QObject::connect(reply, &QNetworkReply::finished, [=]() {
+        if(reply->error() == QNetworkReply::NoError) {
+            //do nothing here
+        }
+        else {
+            qDebug() << "Wrong answer" << reply->error();
+            if(reply->error() == QNetworkReply::AuthenticationRequiredError) {
+                login();
+                return;
+            }
+            QJsonDocument doc(QJsonDocument::fromJson(reply->readAll()));
+            QJsonObject obj = doc.object();
+            if(obj.contains("detail")) {
+                QMessageBox::critical(this, "API Error", obj.value("detail").toString());
+            }
+        }
+        reply->deleteLater();
+    });
+
+}
