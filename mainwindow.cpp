@@ -9,6 +9,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ad, &QDialog::accepted, this, &MainWindow::login);
     connect(ui->listWidgetUserGroups, &QListWidget::itemSelectionChanged, this, &MainWindow::requestDirsAndMachines);
     connect(ui->treeWidgetMachines, &QTreeWidget::itemSelectionChanged, this, &MainWindow::updateCurrentlySelectedObject);
+    connect(ui->listWidgetTunnels, &QListWidget::itemSelectionChanged, this, &MainWindow::updateSSHCommand);
+
 
     connect(ui->lineEditDirectoryName, &QLineEdit::textChanged, [=](QString str) {ui->toolButtonDirectoryCreate->setEnabled(
                     !str.isEmpty() && ui->treeWidgetMachines->currentItem() && ui->treeWidgetMachines->currentItem()->type() == Directory
@@ -254,13 +256,23 @@ void MainWindow::requestTunnelListForMachine(int id)
                     QListWidgetItem *it = ui->listWidgetTunnels->item(ui->listWidgetTunnels->count() - 1);
                     tunnelItemToIDMap.insert(it, tid);
                     toKeep.append(it);
+
+                    QString sshCommand = "ssh ";
+                    sshCommand += ui->labelUsername->text();
+                    sshCommand += "@";
+                    sshCommand += t.value("remote_ssh_server").toString();
+                    sshCommand += " -p ";
+                    sshCommand += QString::number(t.value("reverse_port").toInt());
+                    tunnelItemToSSHCommand.insert(it, sshCommand);
                 }
+
 
             }
             for(QListWidgetItem *it : tunnelItemToIDMap.keys()) {
                 if(!toKeep.contains(it)) {
                     ui->listWidgetTunnels->takeItem(ui->listWidgetTunnels->row(it));
                     tunnelItemToIDMap.remove(it);
+                    tunnelItemToSSHCommand.remove(it);
                 }
             }
         }
@@ -272,6 +284,16 @@ void MainWindow::requestTunnelListForMachine(int id)
         }
         reply->deleteLater();
     });
+}
+
+void MainWindow::updateSSHCommand()
+{
+    QListWidgetItem *item = ui->listWidgetTunnels->currentItem();
+    if(!item || !tunnelItemToSSHCommand.contains(item)) {
+        ui->labelSSHcommand->setText("");
+        return;
+    }
+    ui->labelSSHcommand->setText(tunnelItemToSSHCommand.value(item));
 }
 
 

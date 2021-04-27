@@ -249,6 +249,16 @@
              </widget>
             </item>
             <item>
+             <widget class="QLabel" name="labelSSHcommand">
+              <property name="text">
+               <string/>
+              </property>
+              <property name="textInteractionFlags">
+               <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QFrame" name="formFrame_2">
               <layout class="QFormLayout" name="formLayout_2">
                <item row="0" column="0">

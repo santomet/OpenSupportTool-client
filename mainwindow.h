@@ -42,10 +42,11 @@ private slots:
     void login();
     void requestUserGroups();
     void requestDirsAndMachines();
+    void updateCurrentlySelectedObject();
     void requestMachineDetails(int id);
     void requestTunnelListForMachine(int id);
+    void updateSSHCommand();
 
-    void updateCurrentlySelectedObject();
 
     void on_actionMachineCreate_triggered();
 
@@ -76,6 +77,8 @@ private:
     QMap<QListWidgetItem*, int> userGroupItemToIDMap;
     QMap<QTreeWidgetItem*, int> machineItemToIDMap;
     QMap<QTreeWidgetItem*, int> directoryItemToIDMap;
+
     QMap<QListWidgetItem*, int> tunnelItemToIDMap;
+    QMap<QListWidgetItem*, QString> tunnelItemToSSHCommand;
 };
 #endif // MAINWINDOW_H
