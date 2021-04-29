@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->toolButtonDirectoryCreate->setDefaultAction(ui->actionCreate_Directory);
     ui->toolButtonMachineCreate->setDefaultAction(ui->actionMachineCreate);
     ui->toolButtonMove->setDefaultAction(ui->actionMove);
+    ui->toolButtonMove->hide();
     ui->toolButtonRemove->setDefaultAction(ui->actionDestroy);
 
     ui->toolButtonDirectoryCreate->setEnabled(false);
@@ -256,6 +257,11 @@ void MainWindow::requestTunnelListForMachine(int id)
                     QListWidgetItem *it = ui->listWidgetTunnels->item(ui->listWidgetTunnels->count() - 1);
                     tunnelItemToIDMap.insert(it, tid);
                     toKeep.append(it);
+                    QSettings s;
+                    int vncport = s.value("VNCPort", 5950).toInt();
+                    int socksport = s.value("SOCKSPort", 9050).toInt();
+
+
 
                     QString sshCommand = "ssh ";
                     sshCommand += ui->labelUsername->text();
@@ -263,6 +269,9 @@ void MainWindow::requestTunnelListForMachine(int id)
                     sshCommand += t.value("remote_ssh_server").toString();
                     sshCommand += " -p ";
                     sshCommand += QString::number(t.value("reverse_port").toInt());
+                    sshCommand += QString(" -L %1:localhost:%2").arg(vncport).arg(5900);
+                    sshCommand += QString(" -D %1").arg(socksport);
+
                     tunnelItemToSSHCommand.insert(it, sshCommand);
                 }
 
@@ -495,6 +504,10 @@ void MainWindow::on_actionDestroy_triggered()
 
 void MainWindow::on_actionRequest_a_Tunnel_triggered()
 {
+    if(ui->spinBoxPort->value() == 5900) {
+        QMessageBox::warning(this, "VNC Warning", "Opening a port directly to VNC would enable anyone to connect without authentication. Please, use the recommended procedure.");
+        return;
+    }
 
     QTreeWidgetItem *item = ui->treeWidgetMachines->currentItem();
     if(!item || item->type() != Machine) {
