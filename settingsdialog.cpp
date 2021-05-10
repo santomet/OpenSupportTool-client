@@ -34,7 +34,7 @@ void SettingsDialog::showEvent(QShowEvent *e)
     ui->sshKeyEdit->setPlainText(s.value("SSHKey", "").toString());
     ui->lineEditAPI->setText(s.value("apiurl", "").toString());
     ui->spinBoxVNCPort->setValue(s.value("VNCPort", 5950).toInt());
-    ui->spinBoxVNCPort->setValue(s.value("SOCKSPort", 9050).toInt());
+    ui->spinBoxSOCKSPort->setValue(s.value("SOCKSPort", 9050).toInt());
 
 
     QDialog::showEvent(e);
