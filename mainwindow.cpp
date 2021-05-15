@@ -591,3 +591,8 @@ void MainWindow::on_actionDestroy_the_Tunnel_triggered()
     });
 
 }
+
+void MainWindow::on_pushButton_clicked()
+{
+    clipboard->setText(ui->labelSSHcommand->text());
+}

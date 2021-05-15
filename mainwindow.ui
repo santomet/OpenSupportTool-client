@@ -259,6 +259,13 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="pushButton">
+              <property name="text">
+               <string>COPY COMMAND</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QFrame" name="formFrame_2">
               <layout class="QFormLayout" name="formLayout_2">
                <item row="0" column="0">

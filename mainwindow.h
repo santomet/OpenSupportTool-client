@@ -8,12 +8,14 @@
 #include <QMessageBox>
 #include <QUrlQuery>
 #include <QNetworkReply>
+#include <QGuiApplication>
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QListWidgetItem>
 #include <QTreeWidgetItem>
 #include <QTableWidgetItem>
+#include <QClipboard>
 #include <QMap>
 #include <QDateTime>
 #include <QTimer>
@@ -60,6 +62,8 @@ private slots:
 
     void on_actionDestroy_the_Tunnel_triggered();
 
+    void on_pushButton_clicked();
+
 private:
 
     QTreeWidgetItem *processDirs(QJsonObject dir);
@@ -68,6 +72,8 @@ private:
     QNetworkAccessManager *n {new QNetworkAccessManager(this)};
     SettingsDialog *ad {new SettingsDialog(this)};
     MachineCreateDialog *mcd {new MachineCreateDialog(n, this)};
+    QClipboard *clipboard{QGuiApplication::clipboard()};
+
 
     QString authBearer {""};
     QByteArray authHeaderValue;
