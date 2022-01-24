@@ -85,6 +85,6 @@ private:
     QMap<QTreeWidgetItem*, int> directoryItemToIDMap;
 
     QMap<QListWidgetItem*, int> tunnelItemToIDMap;
-    QMap<QListWidgetItem*, QString> tunnelItemToSSHCommand;
+    QMap<QListWidgetItem*, QString> tunnelItemToCommand;
 };
 #endif // MAINWINDOW_H

@@ -262,17 +262,22 @@ void MainWindow::requestTunnelListForMachine(int id)
                     int socksport = s.value("SOCKSPort", 9050).toInt();
 
 
+                    if(t.value("port_to_tunnel").toInt() == 22) {
+                        QString sshCommand = "ssh ";
+                        sshCommand += ui->labelUsername->text();
+                        sshCommand += "@";
+                        sshCommand += t.value("remote_ssh_server").toString();
+                        sshCommand += " -p ";
+                        sshCommand += QString::number(t.value("reverse_port").toInt());
+                        sshCommand += QString(" -L %1:localhost:%2").arg(vncport).arg(5900);
+                        sshCommand += QString(" -D %1").arg(socksport);
 
-                    QString sshCommand = "ssh ";
-                    sshCommand += ui->labelUsername->text();
-                    sshCommand += "@";
-                    sshCommand += t.value("remote_ssh_server").toString();
-                    sshCommand += " -p ";
-                    sshCommand += QString::number(t.value("reverse_port").toInt());
-                    sshCommand += QString(" -L %1:localhost:%2").arg(vncport).arg(5900);
-                    sshCommand += QString(" -D %1").arg(socksport);
-
-                    tunnelItemToSSHCommand.insert(it, sshCommand);
+                        tunnelItemToCommand.insert(it, sshCommand);
+                    }
+                    else {
+                        QString urladdress = "http://" + t.value("remote_ssh_server").toString() + ":" + QString::number(t.value("reverse_port").toInt());
+                        tunnelItemToCommand.insert(it, urladdress);
+                    }
                 }
 
 
@@ -281,7 +286,7 @@ void MainWindow::requestTunnelListForMachine(int id)
                 if(!toKeep.contains(it)) {
                     ui->listWidgetTunnels->takeItem(ui->listWidgetTunnels->row(it));
                     tunnelItemToIDMap.remove(it);
-                    tunnelItemToSSHCommand.remove(it);
+                    tunnelItemToCommand.remove(it);
                 }
             }
         }
@@ -298,11 +303,11 @@ void MainWindow::requestTunnelListForMachine(int id)
 void MainWindow::updateSSHCommand()
 {
     QListWidgetItem *item = ui->listWidgetTunnels->currentItem();
-    if(!item || !tunnelItemToSSHCommand.contains(item)) {
+    if(!item || !tunnelItemToCommand.contains(item)) {
         ui->labelSSHcommand->setText("");
         return;
     }
-    ui->labelSSHcommand->setText(tunnelItemToSSHCommand.value(item));
+    ui->labelSSHcommand->setText(tunnelItemToCommand.value(item));
 }
 
 
