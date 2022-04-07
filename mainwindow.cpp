@@ -188,7 +188,7 @@ void MainWindow::requestMachineDetails(int id)
         if(reply->error() == QNetworkReply::NoError) {
             QJsonDocument doc(QJsonDocument::fromJson(reply->readAll()));
             QJsonObject mach = doc.object();
-            ui->machineNameLabel->setText(mach.value("title").toString());
+            ui->machineNameLabel->setText(mach.value("title").toString() + " (id: " + QString::number(mach.value("id").toInt()) + ")");
             ui->machineDescriptionLabel->setText(mach.value("description").toString());
             ui->labelCpuUsage->setText(QString::number(mach.value("last_cpu_percent").toDouble(), 'f', 1) + "%");
             ui->labelRamUsage->setText(QString::number(mach.value("last_memory_percent").toDouble(), 'f', 1) + "%");
